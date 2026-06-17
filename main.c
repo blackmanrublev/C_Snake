@@ -11,11 +11,6 @@ static float timer = 0;
 typedef struct {
     int x;
     int y;
-}Snake;
-
-typedef struct {
-    int x;
-    int y;
 }Segment;
 
 typedef struct {
@@ -32,6 +27,8 @@ typedef struct {
     Segment* data;
     int length;
     int capacity;
+    Segment last;
+    float update;
 }DArray;
 
 static DArray snake;
@@ -44,22 +41,10 @@ static void darray_free(DArray* arr);
 static void InitGame(void);
 static void UpdateGame(void);
 static void DrawGame(void);
-static void Move(Snake* s, Direction* d);
+static void Move(Segment* s, Direction* d, int length);
 static void Eat(void);
 
-
 static int cell_size = 20;
-
-static Snake player[5] = {
-    {5,1},
-    {4,1},
-    {3,1},
-    {2,1},
-    {1,1},
-};
-
-static int player_length = sizeof(player) / sizeof(player[0]);
-static float player_update = 0.5;
 
 static Apple APPLES[1] = {
     {10, 12},
@@ -107,16 +92,12 @@ int main(void)
 
         if (IsKeyPressed(KEY_A))
         {
-            Segment a = snake.data[snake.length-1];
-            a.x = a.x - 1;
-            a.y = 1;
-            darray_push(&snake, a);
-            printf("%i\n", snake.capacity);
+            Eat();
         }
 
-        if (timer >= player_update)
+        if (timer >= snake.update)
         {
-            Move(player, direction);
+            Move(snake.data, direction, snake.length);
             timer = 0;
         }
 
@@ -140,10 +121,6 @@ void DrawGame(void)
 
     ClearBackground(BLACK);
 
-    // for (int i = 0; i < player_length; i++)
-    // {
-    //     DrawRectangle(player[i].x * cell_size, player[i].y * cell_size, cell_size, cell_size, GREEN);
-    // }
     for (int i = 0; i < snake.length; i++)
     {
         Segment v = snake.data[i];
@@ -158,26 +135,21 @@ void DrawGame(void)
     EndDrawing();
 }
 
-void Move(Snake* s, Direction* d)
+void Move(Segment* s, Direction* d, int length)
 {
-    // for (int i = player_length - 1; i >= 0; i--)
-    // {
-    //     if (i == 0)
-    //     {
-    //         s[i].y = s[i].y + d[i].y;
-    //         s[i].x = s[i].x + d[i].x;
-    //     }
-    //     else
-    //     {
-    //         s[i] = s[i - 1];
-    //     }
-    // }
-    for (int i = player_length - 1; i >= 0; i--)
+    snake.last.x = snake.data[snake.length - 1].x;
+    snake.last.y = snake.data[snake.length - 1].y;
+    for (int i = length - 1; i >= 0; i--)
     {
         if (i == 0)
         {
             s[i].y = s[i].y + d[i].y;
             s[i].x = s[i].x + d[i].x;
+
+            if (s[i].x == APPLES[0].x && s[i].y == APPLES[0].y)
+            {
+                Eat();
+            }
         }
         else
         {
@@ -186,11 +158,25 @@ void Move(Snake* s, Direction* d)
     }
 }
 
+void Eat()
+{
+    darray_push(&snake, snake.last);
+
+    int x = rand() % ((win_width / cell_size) - 1);
+    x = x + 1;
+    int y = rand() % ((win_height / cell_size) - 1);
+    y = y + 1;
+
+    APPLES[0].x = x;
+    APPLES[0].y = y;
+}
+
 void darray_init(DArray* arr, int start_capacity)
 {
     arr->data = (Segment*)malloc(start_capacity * sizeof(Segment));
     arr->length = 0;
     arr->capacity = start_capacity;
+    arr->update = 0.13;
 }
 
 void darray_push(DArray* arr, Segment segment)
@@ -220,7 +206,7 @@ void darray_pop(DArray* arr)
 }
 
 void darray_free(DArray* arr)
-{
+{  
     free(arr->data);
     arr->data = NULL;
     arr->length = 0;
