@@ -11,6 +11,22 @@ static float timer = 0;
 typedef struct {
     int x;
     int y;
+    int world_x;
+    int world_y;
+    char* space;
+}Cell;
+
+typedef struct {
+    Cell* spaces;
+    int size;
+    int width;
+    int height;
+    int length;
+}Grid;
+
+typedef struct {
+    int x;
+    int y;
 }Segment;
 
 typedef struct {
@@ -32,11 +48,13 @@ typedef struct {
 }DArray;
 
 static DArray snake;
+static Grid grid;
 
 static void darray_init(DArray* arr, int start_capacity);
 static void darray_push(DArray* arr, Segment segment);
 static void darray_pop(DArray* arr);
 static void darray_free(DArray* arr);
+static void grid_init(Grid* grid, int size, int width, int height);
 
 static void InitGame(void);
 static void UpdateGame(void);
@@ -47,7 +65,7 @@ static void Eat(void);
 static int cell_size = 20;
 
 static Apple APPLES[1] = {
-    {10, 12},
+    {5, 5},
 };
 
 static int APPLES_length = sizeof(APPLES) / sizeof(APPLES[0]);
@@ -111,8 +129,10 @@ int main(void)
 void InitGame(void)
 {
     darray_init(&snake, 5);
-    Segment head = {11, 1};
+    Segment head = {1, 1};
     darray_push(&snake, head);
+
+    grid_init(&grid, cell_size, win_width, win_height);
 }
 
 void DrawGame(void)
@@ -131,7 +151,11 @@ void DrawGame(void)
         Apple v = APPLES[i];
         DrawRectangle(v.x * cell_size, v.y * cell_size, cell_size, cell_size, RED);
     }
-
+    for (int i = 0; i < grid.length; i++)
+    {
+        //grid.spaces[i].x * cell_size;
+        DrawRectangleLines(grid.spaces[i].x * cell_size, grid.spaces[i].y * cell_size, grid.size, grid.size, WHITE);
+    }
     EndDrawing();
 }
 
@@ -162,13 +186,11 @@ void Eat()
 {
     darray_push(&snake, snake.last);
 
-    int x = rand() % ((win_width / cell_size) - 1);
-    x = x + 1;
-    int y = rand() % ((win_height / cell_size) - 1);
-    y = y + 1;
+    int i = rand() % grid.length - 1;
+    Cell c = grid.spaces[i];
 
-    APPLES[0].x = x;
-    APPLES[0].y = y;
+    APPLES[0].x = c.x;
+    APPLES[0].y = c.y;
 }
 
 void darray_init(DArray* arr, int start_capacity)
@@ -211,4 +233,30 @@ void darray_free(DArray* arr)
     arr->data = NULL;
     arr->length = 0;
     arr->capacity = 0;
+}
+
+void grid_init(Grid* grid, int size, int width, int height)
+{
+    int grid_x_count = width / size;
+    int grid_y_count = height / size;
+
+    grid->spaces = (Cell*)malloc((grid_x_count * grid_y_count) * sizeof(Cell));
+    grid->length = 0;
+    grid->size = size;
+    grid->width = width;
+    grid->height = height;
+
+    int i = 0;
+
+    for (int grid_y = 0; grid_y < grid_y_count; grid_y++)
+    {
+        for (int grid_x = 0; grid_x < grid_x_count; grid_x++)
+        {
+            Cell a = {grid_x, grid_y, grid_x * size, grid_y * size};
+            grid->spaces[i] = a;
+            i++;
+            printf("%i, %i\n", grid_x, grid_y);
+            grid->length++;
+        }
+    }
 }
