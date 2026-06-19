@@ -50,11 +50,13 @@ typedef struct {
 static DArray snake;
 static Grid grid;
 
-static void darray_init(DArray* arr, int start_capacity);
-static void darray_push(DArray* arr, Segment segment);
-static void darray_pop(DArray* arr);
-static void darray_free(DArray* arr);
-static void grid_init(Grid* grid, int size, int width, int height);
+static void DarrayInit(DArray* arr, int start_capacity);
+static void DarrayPush(DArray* arr, Segment segment);
+static void DarrayPop(DArray* arr);
+static void DarrayFree(DArray* arr);
+static void GridInit(Grid* grid, int size, int width, int height);
+static int GetIndex(int x, int y);
+static bool IsFree(int i);
 
 static void InitGame(void);
 static void UpdateGame(void);
@@ -65,7 +67,7 @@ static void Eat(void);
 static int cell_size = 20;
 
 static Apple APPLES[1] = {
-    {5, 5},
+    {2, 1},
 };
 
 static int APPLES_length = sizeof(APPLES) / sizeof(APPLES[0]);
@@ -79,7 +81,7 @@ int main(void)
 
     InitWindow(win_width, win_height, "nipple");
     SetTargetFPS(60);
-    InitGame();
+    InitGame(); 
 
     while(!WindowShouldClose())
     {
@@ -119,6 +121,8 @@ int main(void)
             timer = 0;
         }
 
+        UpdateGame();
+
         DrawGame();
     }
 
@@ -128,11 +132,38 @@ int main(void)
 
 void InitGame(void)
 {
-    darray_init(&snake, 5);
+    DarrayInit(&snake, 5);
     Segment head = {1, 1};
-    darray_push(&snake, head);
+    DarrayPush(&snake, head);
 
-    grid_init(&grid, cell_size, win_width, win_height);
+    GridInit(&grid, cell_size, win_width, win_height);
+
+    for (int i = 0; i < snake.length; i++)
+    {
+        // Cell* a = GetCell(&grid, snake.data[i].x, snake.data[i].y);
+        // Cell b = *a;
+        // printf("%p\n", &a);
+        // b.space = "snake";
+        grid.spaces[GetIndex(snake.data[i].x, snake.data[i].y)].space = "snake";
+        printf("%i", snake.data[i].x + snake.data[i].y * 10);
+        //a.space = "nipple";
+    }
+
+    grid.spaces[GetIndex(APPLES[0].x, APPLES[0].y)].space = "apple";
+}
+
+void UpdateGame(void)
+{
+    for (int i = 0; i < snake.length; i++)
+    {
+        grid.spaces[GetIndex(snake.data[i].x, snake.data[i].y)].space = "snake";
+        if (i == 0 && grid.spaces[GetIndex(snake.last.x, snake.last.y)].space == "snake")
+        {
+            grid.spaces[GetIndex(snake.last.x, snake.last.y)].space = "";
+        }
+    }
+    
+    grid.spaces[GetIndex(APPLES[0].x, APPLES[0].y)].space = "apple";
 }
 
 void DrawGame(void)
@@ -155,6 +186,7 @@ void DrawGame(void)
     {
         //grid.spaces[i].x * cell_size;
         DrawRectangleLines(grid.spaces[i].x * cell_size, grid.spaces[i].y * cell_size, grid.size, grid.size, WHITE);
+        DrawText(grid.spaces[i].space, grid.spaces[i].x * cell_size, grid.spaces[i].y * cell_size, 18, WHITE);
     }
     EndDrawing();
 }
@@ -180,20 +212,28 @@ void Move(Segment* s, Direction* d, int length)
             s[i] = s[i - 1];
         }
     }
+    // printf("%d", IsFree(21));
 }
 
 void Eat()
 {
-    darray_push(&snake, snake.last);
 
     int i = rand() % grid.length - 1;
     Cell c = grid.spaces[i];
+
+    if (c.space != "")
+    {
+        return Eat();
+        printf("%i", i);
+    }
+    
+    DarrayPush(&snake, snake.last);
 
     APPLES[0].x = c.x;
     APPLES[0].y = c.y;
 }
 
-void darray_init(DArray* arr, int start_capacity)
+void DarrayInit(DArray* arr, int start_capacity)
 {
     arr->data = (Segment*)malloc(start_capacity * sizeof(Segment));
     arr->length = 0;
@@ -201,7 +241,7 @@ void darray_init(DArray* arr, int start_capacity)
     arr->update = 0.13;
 }
 
-void darray_push(DArray* arr, Segment segment)
+void DarrayPush(DArray* arr, Segment segment)
 {
     if (arr->length >= arr->capacity)
     {
@@ -219,7 +259,7 @@ void darray_push(DArray* arr, Segment segment)
     arr->length++;
 }
 
-void darray_pop(DArray* arr)
+void DarrayPop(DArray* arr)
 {
     if (arr->length > 0)
     {
@@ -227,7 +267,7 @@ void darray_pop(DArray* arr)
     }
 }
 
-void darray_free(DArray* arr)
+void DarrayFree(DArray* arr)
 {  
     free(arr->data);
     arr->data = NULL;
@@ -235,7 +275,7 @@ void darray_free(DArray* arr)
     arr->capacity = 0;
 }
 
-void grid_init(Grid* grid, int size, int width, int height)
+void GridInit(Grid* grid, int size, int width, int height)
 {
     int grid_x_count = width / size;
     int grid_y_count = height / size;
@@ -253,10 +293,32 @@ void grid_init(Grid* grid, int size, int width, int height)
         for (int grid_x = 0; grid_x < grid_x_count; grid_x++)
         {
             Cell a = {grid_x, grid_y, grid_x * size, grid_y * size};
+            if (i == 21)
+            {
+                printf("%p\n", &a);
+            }
             grid->spaces[i] = a;
             i++;
             printf("%i, %i\n", grid_x, grid_y);
             grid->length++;
         }
+    }
+}
+
+int GetIndex(int x, int y)
+{
+    return x + y * grid.width / grid.size;
+}
+
+bool IsFree(int i)
+{
+    Cell a = grid.spaces[i];
+    if (a.space != "")
+    {
+        return false;
+    }
+    else
+    {
+        return true;
     }
 }
