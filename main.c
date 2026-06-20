@@ -3,8 +3,8 @@
 #include <string.h>
 #include "raylib.h"
 
-static const int win_width = 400;    //Window width
-static const int win_height = 400;  //Window height
+static const int win_width = 200;    //Window width
+static const int win_height = 40;  //Window height
 static float dt = 0;    //Delta time
 static float timer = 0;
 
@@ -67,7 +67,7 @@ static void Eat(void);
 static int cell_size = 20;
 
 static Apple APPLES[1] = {
-    {2, 1},
+    {4, 1},
 };
 
 static int APPLES_length = sizeof(APPLES) / sizeof(APPLES[0]);
@@ -140,13 +140,7 @@ void InitGame(void)
 
     for (int i = 0; i < snake.length; i++)
     {
-        // Cell* a = GetCell(&grid, snake.data[i].x, snake.data[i].y);
-        // Cell b = *a;
-        // printf("%p\n", &a);
-        // b.space = "snake";
         grid.spaces[GetIndex(snake.data[i].x, snake.data[i].y)].space = "snake";
-        printf("%i", snake.data[i].x + snake.data[i].y * 10);
-        //a.space = "nipple";
     }
 
     grid.spaces[GetIndex(APPLES[0].x, APPLES[0].y)].space = "apple";
@@ -156,14 +150,17 @@ void UpdateGame(void)
 {
     for (int i = 0; i < snake.length; i++)
     {
-        grid.spaces[GetIndex(snake.data[i].x, snake.data[i].y)].space = "snake";
+        if (GetIndex(snake.data[i].x, snake.data[i].y) != -1)
+        {
+            grid.spaces[GetIndex(snake.data[i].x, snake.data[i].y)].space = "snake";
+
+            grid.spaces[GetIndex(APPLES[0].x, APPLES[0].y)].space = "apple";
+        }
         if (i == 0 && grid.spaces[GetIndex(snake.last.x, snake.last.y)].space == "snake")
         {
             grid.spaces[GetIndex(snake.last.x, snake.last.y)].space = "";
         }
     }
-    
-    grid.spaces[GetIndex(APPLES[0].x, APPLES[0].y)].space = "apple";
 }
 
 void DrawGame(void)
@@ -212,19 +209,26 @@ void Move(Segment* s, Direction* d, int length)
             s[i] = s[i - 1];
         }
     }
-    // printf("%d", IsFree(21));
 }
 
 void Eat()
 {
 
-    int i = rand() % grid.length - 1;
+    // int i = 1;
+    int i = rand() % (grid.length);
     Cell c = grid.spaces[i];
 
     if (c.space != "")
     {
-        return Eat();
-        printf("%i", i);
+        if (snake.length < grid.length - 1)
+        {
+            return Eat();
+        }
+        else
+        {
+            c.x = -1000;
+            c.y = -1000;
+        }
     }
     
     DarrayPush(&snake, snake.last);
@@ -238,7 +242,7 @@ void DarrayInit(DArray* arr, int start_capacity)
     arr->data = (Segment*)malloc(start_capacity * sizeof(Segment));
     arr->length = 0;
     arr->capacity = start_capacity;
-    arr->update = 0.13;
+    arr->update = 0.5;
 }
 
 void DarrayPush(DArray* arr, Segment segment)
@@ -293,13 +297,9 @@ void GridInit(Grid* grid, int size, int width, int height)
         for (int grid_x = 0; grid_x < grid_x_count; grid_x++)
         {
             Cell a = {grid_x, grid_y, grid_x * size, grid_y * size};
-            if (i == 21)
-            {
-                printf("%p\n", &a);
-            }
             grid->spaces[i] = a;
+            grid->spaces[i].space = "";
             i++;
-            printf("%i, %i\n", grid_x, grid_y);
             grid->length++;
         }
     }
@@ -307,7 +307,15 @@ void GridInit(Grid* grid, int size, int width, int height)
 
 int GetIndex(int x, int y)
 {
-    return x + y * grid.width / grid.size;
+    int index = x + y * grid.width / grid.size;
+    if (index < -1 || index > grid.length-1)
+    {
+        return -1;
+    }
+    else
+    {
+        return index;
+    }
 }
 
 bool IsFree(int i)
