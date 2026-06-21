@@ -3,8 +3,8 @@
 #include <string.h>
 #include "raylib.h"
 
-static const int win_width = 200;    //Window width
-static const int win_height = 40;  //Window height
+static const int win_width = 400;    //Window width
+static const int win_height = 400;  //Window height
 static float dt = 0;    //Delta time
 static float timer = 0;
 
@@ -40,6 +40,12 @@ typedef struct {
 }Direction;
 
 typedef struct {
+    Direction* queue;
+    int length;
+    int capacity;
+}DirectionQueue;
+
+typedef struct {
     Segment* data;
     int length;
     int capacity;
@@ -49,11 +55,15 @@ typedef struct {
 
 static DArray snake;
 static Grid grid;
+static DirectionQueue direction_queue;
 
 static void DarrayInit(DArray* arr, int start_capacity);
 static void DarrayPush(DArray* arr, Segment segment);
 static void DarrayPop(DArray* arr);
 static void DarrayFree(DArray* arr);
+static void DirectionQueueInit(DirectionQueue* arr, int start_capacity);
+static void DirectionQueuePush(DirectionQueue* arr, Direction direction);
+static Direction DirectionQueuePop(DirectionQueue* arr, int index);
 static void GridInit(Grid* grid, int size, int width, int height);
 static int GetIndex(int x, int y);
 static bool IsFree(int i);
@@ -61,7 +71,7 @@ static bool IsFree(int i);
 static void InitGame(void);
 static void UpdateGame(void);
 static void DrawGame(void);
-static void Move(Segment* s, Direction* d, int length);
+static void Move(Segment* s, DirectionQueue* d, int length);
 static void Eat(void);
 
 static int cell_size = 20;
@@ -89,25 +99,31 @@ int main(void)
 
         timer = timer + dt;
 
+        Direction directiion = {0, 0};
+
         if (IsKeyPressed(KEY_RIGHT))
         {
-            direction[0].x = 1;
-            direction[0].y = 0;
+            directiion.x = 1;
+            directiion.y = 0;
+            DirectionQueuePush(&direction_queue, directiion);
         }
         else if(IsKeyPressed(KEY_DOWN))
         {
-            direction[0].x = 0;
-            direction[0].y = 1;
+            directiion.x = 0;
+            directiion.y = 1;
+            DirectionQueuePush(&direction_queue, directiion);
         }
         else if(IsKeyPressed(KEY_LEFT))
         {
-            direction[0].x = -1;
-            direction[0].y = 0;
+            directiion.x = -1;
+            directiion.y = 0;
+            DirectionQueuePush(&direction_queue, directiion);
         }
         else if(IsKeyPressed(KEY_UP))
         {
-            direction[0].x = 0;
-            direction[0].y = -1;
+            directiion.x = 0;
+            directiion.y = -1;
+            DirectionQueuePush(&direction_queue, directiion);
         }
 
         if (IsKeyPressed(KEY_A))
@@ -115,13 +131,9 @@ int main(void)
             Eat();
         }
 
-        if (timer >= snake.update)
-        {
-            Move(snake.data, direction, snake.length);
-            timer = 0;
-        }
-
         UpdateGame();
+        
+
 
         DrawGame();
     }
@@ -136,6 +148,10 @@ void InitGame(void)
     Segment head = {1, 1};
     DarrayPush(&snake, head);
 
+    DirectionQueueInit(&direction_queue, 3);
+    Direction directionn = {0, 1};
+    DirectionQueuePush(&direction_queue, directionn);
+
     GridInit(&grid, cell_size, win_width, win_height);
 
     for (int i = 0; i < snake.length; i++)
@@ -148,6 +164,19 @@ void InitGame(void)
 
 void UpdateGame(void)
 {
+    /*if (direction_queue.length == 1)
+    {
+        DirectionQueuePush(&direction_queue, direction_queue.queue[0]);
+    }*/
+
+
+    if (timer >= snake.update)
+    {
+        printf("%i", direction_queue.length);
+        Move(snake.data, &direction_queue, snake.length);
+        timer = 0;
+    }
+
     for (int i = 0; i < snake.length; i++)
     {
         if (GetIndex(snake.data[i].x, snake.data[i].y) != -1)
@@ -161,6 +190,7 @@ void UpdateGame(void)
             grid.spaces[GetIndex(snake.last.x, snake.last.y)].space = "";
         }
     }
+
 }
 
 void DrawGame(void)
@@ -188,7 +218,7 @@ void DrawGame(void)
     EndDrawing();
 }
 
-void Move(Segment* s, Direction* d, int length)
+void Move(Segment* s, DirectionQueue* d, int length)
 {
     snake.last.x = snake.data[snake.length - 1].x;
     snake.last.y = snake.data[snake.length - 1].y;
@@ -196,8 +226,13 @@ void Move(Segment* s, Direction* d, int length)
     {
         if (i == 0)
         {
-            s[i].y = s[i].y + d[i].y;
-            s[i].x = s[i].x + d[i].x;
+            if (d->length > 0)
+            {
+                direction[i] = DirectionQueuePop(d, i);
+            }
+            
+            s[i].y = s[i].y + direction[i].y;
+            s[i].x = s[i].x + direction[i].x;
 
             if (s[i].x == APPLES[0].x && s[i].y == APPLES[0].y)
             {
@@ -214,7 +249,6 @@ void Move(Segment* s, Direction* d, int length)
 void Eat()
 {
 
-    // int i = 1;
     int i = rand() % (grid.length);
     Cell c = grid.spaces[i];
 
@@ -277,6 +311,46 @@ void DarrayFree(DArray* arr)
     arr->data = NULL;
     arr->length = 0;
     arr->capacity = 0;
+}
+
+void DirectionQueueInit(DirectionQueue* arr, int start_capacity)
+{
+    arr->queue = (Direction*)malloc(start_capacity * sizeof(Direction));
+    arr->length = 0;
+    arr->capacity = start_capacity;
+}
+
+void DirectionQueuePush(DirectionQueue* arr, Direction direction)
+{
+    if (arr->length >= arr->capacity)
+    {
+        int new_capacity = arr->capacity * 2;
+        Direction* new_queue = (Direction*)realloc(arr->queue, new_capacity * sizeof(Direction));
+
+        if (new_queue == NULL)
+        {
+            return;
+        }
+        arr->queue = new_queue;
+        arr->capacity = new_capacity;
+    }
+
+    arr->queue[arr->length] = direction;
+    arr->length++;
+}
+
+Direction DirectionQueuePop(DirectionQueue* arr, int index)
+{
+    if(arr->length > 0)
+    {
+        Direction direction = arr->queue[index];
+        for (int i = index; i < arr->length - 1; i++)
+        {
+            arr->queue[i] = arr->queue[i+1];
+        }
+        arr->length--;
+        return direction;
+    }
 }
 
 void GridInit(Grid* grid, int size, int width, int height)
