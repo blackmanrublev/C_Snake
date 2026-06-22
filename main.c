@@ -100,30 +100,45 @@ int main(void)
         timer = timer + dt;
 
         Direction directiion = {0, 0};
+        Direction current_direction = {0, 0};
+        current_direction.x = direction_queue.queue[0].x;
+        current_direction.y = direction_queue.queue[0].y;
 
         if (IsKeyPressed(KEY_RIGHT))
         {
-            directiion.x = 1;
-            directiion.y = 0;
-            DirectionQueuePush(&direction_queue, directiion);
+            if (current_direction.x != -1 && current_direction.x != 1)
+            {
+                directiion.x = 1;
+                directiion.y = 0;
+                DirectionQueuePush(&direction_queue, directiion);
+            }
         }
         else if(IsKeyPressed(KEY_DOWN))
         {
-            directiion.x = 0;
-            directiion.y = 1;
-            DirectionQueuePush(&direction_queue, directiion);
+            if (current_direction.y != -1 && current_direction.y != 1)
+            {
+                directiion.x = 0;
+                directiion.y = 1;
+                DirectionQueuePush(&direction_queue, directiion);
+            }
         }
         else if(IsKeyPressed(KEY_LEFT))
         {
-            directiion.x = -1;
-            directiion.y = 0;
-            DirectionQueuePush(&direction_queue, directiion);
+            if (current_direction .x != 1 && current_direction.x != -1)
+            {
+                directiion.x = -1;
+                directiion.y = 0;
+                DirectionQueuePush(&direction_queue, directiion);
+            }
         }
         else if(IsKeyPressed(KEY_UP))
         {
-            directiion.x = 0;
-            directiion.y = -1;
-            DirectionQueuePush(&direction_queue, directiion);
+            if (current_direction.y != 1 && current_direction.y != 1)
+            {
+                directiion.x = 0;
+                directiion.y = -1;
+                DirectionQueuePush(&direction_queue, directiion);
+            }
         }
 
         if (IsKeyPressed(KEY_A))
@@ -172,7 +187,6 @@ void UpdateGame(void)
 
     if (timer >= snake.update)
     {
-        printf("%i", direction_queue.length);
         Move(snake.data, &direction_queue, snake.length);
         timer = 0;
     }
