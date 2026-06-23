@@ -9,6 +9,15 @@ static float dt = 0;    //Delta time
 static float timer = 0;
 
 typedef struct {
+    float initial_value;
+    float final_value;
+    float duration;
+    float timer;
+    float difference;
+    bool update;
+}Tween;
+
+typedef struct {
     int x;
     int y;
     int world_x;
@@ -27,6 +36,10 @@ typedef struct {
 typedef struct {
     int x;
     int y;
+    float draw_x;
+    float draw_y;
+    Tween x_tween;
+    Tween y_tween;
 }Segment;
 
 typedef struct {
@@ -67,6 +80,7 @@ static Direction DirectionQueuePop(DirectionQueue* arr, int index);
 static void GridInit(Grid* grid, int size, int width, int height);
 static int GetIndex(int x, int y);
 static bool IsFree(int i);
+static Tween TweenInit(float initial_value, float final_value, float duration);
 
 static void InitGame(void);
 static void UpdateGame(void);
@@ -160,7 +174,9 @@ int main(void)
 void InitGame(void)
 {
     DarrayInit(&snake, 5);
-    Segment head = {1, 1};
+    Tween x = {1, 1, 0.10, 0};
+    Tween y = {1, 1, 0.10, 0};
+    Segment head = {1, 1, 1, 1, x, y};
     DarrayPush(&snake, head);
 
     DirectionQueueInit(&direction_queue, 3);
@@ -179,12 +195,6 @@ void InitGame(void)
 
 void UpdateGame(void)
 {
-    /*if (direction_queue.length == 1)
-    {
-        DirectionQueuePush(&direction_queue, direction_queue.queue[0]);
-    }*/
-
-
     if (timer >= snake.update)
     {
         Move(snake.data, &direction_queue, snake.length);
@@ -203,6 +213,30 @@ void UpdateGame(void)
         {
             grid.spaces[GetIndex(snake.last.x, snake.last.y)].space = "";
         }
+
+        if (snake.data[i].x_tween.timer < snake.data[i].x_tween.duration && snake.data[i].x_tween.update == true)
+        {
+            snake.data[i].x_tween.timer = snake.data[i].x_tween.timer + dt;
+            snake.data[i].draw_x = snake.data[i].x_tween.initial_value + (snake.data[i].x_tween.difference * (snake.data[i].x_tween.timer / snake.data[i].x_tween.duration));
+        }
+        else
+        {
+            snake.data[i].draw_x = snake.data[i].x;
+            snake.data[i].x_tween.update = false;
+            snake.data[i].x_tween.timer = 0;
+        }
+        
+        if (snake.data[i].y_tween.timer < snake.data[i].y_tween.duration && snake.data[i].y_tween.update == true)
+        {
+            snake.data[i].y_tween.timer = snake.data[i].y_tween.timer + dt;
+            snake.data[i].draw_y = snake.data[i].y_tween.initial_value + (snake.data[i].y_tween.difference * (snake.data[i].y_tween.timer / snake.data[i].y_tween.duration));
+        }
+        else
+        {
+            snake.data[i].draw_y = snake.data[i].y;
+            snake.data[i].y_tween.update = false;
+            snake.data[i].y_tween.timer = 0;
+        }
     }
 
 }
@@ -216,7 +250,7 @@ void DrawGame(void)
     for (int i = 0; i < snake.length; i++)
     {
         Segment v = snake.data[i];
-        DrawRectangle(v.x * cell_size, v.y * cell_size, cell_size, cell_size, GREEN);
+        DrawRectangle(v.draw_x * cell_size, v.draw_y * cell_size, cell_size, cell_size, GREEN);
     }
     for (int i = 0; i < APPLES_length; i++)
     {
@@ -225,17 +259,15 @@ void DrawGame(void)
     }
     for (int i = 0; i < grid.length; i++)
     {
-        //grid.spaces[i].x * cell_size;
-        DrawRectangleLines(grid.spaces[i].x * cell_size, grid.spaces[i].y * cell_size, grid.size, grid.size, WHITE);
-        DrawText(grid.spaces[i].space, grid.spaces[i].x * cell_size, grid.spaces[i].y * cell_size, 18, WHITE);
+        // DrawRectangleLines(grid.spaces[i].x * cell_size, grid.spaces[i].y * cell_size, grid.size, grid.size, WHITE);
+        // DrawText(grid.spaces[i].space, grid.spaces[i].x * cell_size, grid.spaces[i].y * cell_size, 18, WHITE);
     }
     EndDrawing();
 }
 
 void Move(Segment* s, DirectionQueue* d, int length)
 {
-    snake.last.x = snake.data[snake.length - 1].x;
-    snake.last.y = snake.data[snake.length - 1].y;
+    snake.last = snake.data[snake.length - 1];
     for (int i = length - 1; i >= 0; i--)
     {
         if (i == 0)
@@ -255,7 +287,23 @@ void Move(Segment* s, DirectionQueue* d, int length)
         }
         else
         {
-            s[i] = s[i - 1];
+            s[i].x = s[i - 1].x;
+            s[i].y = s[i - 1].y;
+        }
+
+        if (s[i].x != s[i].draw_x && s[i].x_tween.update == false)
+        {
+            s[i].x_tween.update = true;
+            s[i].x_tween.final_value = s[i].x;
+            s[i].x_tween.initial_value = s[i].draw_x;
+            s[i].x_tween.difference = (float)s[i].x - s[i].draw_x;
+        }
+        if (s[i].y != s[i].draw_y && s[i].y_tween.update == false)
+        {
+            s[i].y_tween.update = true;
+            s[i].y_tween.final_value = s[i].y;
+            s[i].y_tween.initial_value = s[i].draw_y;
+            s[i].y_tween.difference = (float)s[i].y - s[i].draw_y;
         }
     }
 }
@@ -290,7 +338,7 @@ void DarrayInit(DArray* arr, int start_capacity)
     arr->data = (Segment*)malloc(start_capacity * sizeof(Segment));
     arr->length = 0;
     arr->capacity = start_capacity;
-    arr->update = 0.5;
+    arr->update = 0.13;
 }
 
 void DarrayPush(DArray* arr, Segment segment)
