@@ -45,6 +45,9 @@ typedef struct {
 typedef struct {
     int x;
     int y;
+    int size;
+    float draw_size;
+    Tween size_tween;
 }Apple;
 
 typedef struct {
@@ -88,10 +91,11 @@ static void DrawGame(void);
 static void Move(Segment* s, DirectionQueue* d, int length);
 static void Eat(void);
 
-static int cell_size = 20;
+static const int cell_size = 20;
 
+static const Tween size = {1, 1, 0.15, 0};
 static Apple APPLES[1] = {
-    {4, 1},
+    {4, 1, cell_size, 0, size},
 };
 
 static int APPLES_length = sizeof(APPLES) / sizeof(APPLES[0]);
@@ -239,6 +243,29 @@ void UpdateGame(void)
         }
     }
 
+    for (int i = 0; i < 1; i++)
+    {
+        if (APPLES[i].draw_size != APPLES[i].size && APPLES[i].size_tween.update == false)
+        {
+            APPLES[i].size_tween.update = true;
+            APPLES[i].size_tween.final_value = APPLES[i].size;
+            APPLES[i].size_tween.initial_value = APPLES[i].draw_size;
+            APPLES[i].size_tween.difference = (float)APPLES[i].size - APPLES[i].draw_size;
+        }
+
+        if (APPLES[i].size_tween.timer < APPLES[i].size_tween.duration && APPLES[i].size_tween.update == true)
+        {
+            APPLES[i].size_tween.timer = APPLES[i].size_tween.timer + dt;
+            APPLES[i].draw_size = APPLES[i].size_tween.initial_value + (APPLES[i].size_tween.difference * (APPLES[i].size_tween.timer / APPLES[i].size_tween.duration));
+        }
+        else
+        {
+            APPLES[i].draw_size = APPLES[i].size;
+            APPLES[i].size_tween.update = false;
+            APPLES[i].size_tween.timer = 0;
+        }
+    }
+
 }
 
 void DrawGame(void)
@@ -255,7 +282,8 @@ void DrawGame(void)
     for (int i = 0; i < APPLES_length; i++)
     {
         Apple v = APPLES[i];
-        DrawRectangle(v.x * cell_size, v.y * cell_size, cell_size, cell_size, RED);
+        // DrawRectangle(v.x * cell_size, v.y * cell_size, v.draw_size, v.draw_size, RED);
+        DrawRectangle((v.x * cell_size) + cell_size/2 - v.draw_size/2, (v.y * cell_size) + cell_size/2 - v.draw_size/2, v.draw_size, v.draw_size, RED);
     }
     for (int i = 0; i < grid.length; i++)
     {
@@ -331,6 +359,7 @@ void Eat()
 
     APPLES[0].x = c.x;
     APPLES[0].y = c.y;
+    APPLES[0].draw_size = 0;
 }
 
 void DarrayInit(DArray* arr, int start_capacity)
