@@ -277,7 +277,14 @@ void DrawGame(void)
     for (int i = 0; i < snake.length; i++)
     {
         Segment v = snake.data[i];
-        DrawRectangle(v.draw_x * cell_size, v.draw_y * cell_size, cell_size, cell_size, GREEN);
+        if (i % 2 == 0)
+        {
+            DrawRectangle(v.draw_x * cell_size, v.draw_y * cell_size, cell_size, cell_size, GREEN);
+        }
+        else
+        {
+            DrawRectangle(v.draw_x * cell_size, v.draw_y * cell_size, cell_size, cell_size, DARKGREEN);
+        }
     }
     for (int i = 0; i < APPLES_length; i++)
     {
