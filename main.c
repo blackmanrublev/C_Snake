@@ -95,7 +95,7 @@ static const int cell_size = 20;
 
 static const Tween size = {1, 1, 0.15, 0};
 static Apple APPLES[1] = {
-    {4, 1, cell_size, 0, size},
+    {4, 1, 10, 0, size},
 };
 
 static int APPLES_length = sizeof(APPLES) / sizeof(APPLES[0]);
@@ -279,11 +279,11 @@ void DrawGame(void)
         Segment v = snake.data[i];
         if (i % 2 == 0)
         {
-            DrawRectangle(v.draw_x * cell_size, v.draw_y * cell_size, cell_size, cell_size, GREEN);
+            DrawRectangle((v.draw_x * cell_size) + cell_size/2 - 15/2, (v.draw_y * cell_size) + cell_size/2 - 15/2, 15, 15, GREEN);
         }
         else
         {
-            DrawRectangle(v.draw_x * cell_size, v.draw_y * cell_size, cell_size, cell_size, DARKGREEN);
+            DrawRectangle((v.draw_x * cell_size) + cell_size/2 - 15/2, (v.draw_y * cell_size) + cell_size/2 - 15/2, 15, 15, DARKGREEN);
         }
     }
     for (int i = 0; i < APPLES_length; i++)
