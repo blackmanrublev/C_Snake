@@ -36,8 +36,10 @@ typedef struct {
 typedef struct {
     int x;
     int y;
+    int size;
     float draw_x;
     float draw_y;
+    float draw_size;
     Tween x_tween;
     Tween y_tween;
 }Segment;
@@ -180,7 +182,7 @@ void InitGame(void)
     DarrayInit(&snake, 5);
     Tween x = {1, 1, 0.10, 0};
     Tween y = {1, 1, 0.10, 0};
-    Segment head = {1, 1, 1, 1, x, y};
+    Segment head = {1, 1, 15, 1, 1, 15, x, y};
     DarrayPush(&snake, head);
 
     DirectionQueueInit(&direction_queue, 3);
@@ -279,11 +281,11 @@ void DrawGame(void)
         Segment v = snake.data[i];
         if (i % 2 == 0)
         {
-            DrawRectangle((v.draw_x * cell_size) + cell_size/2 - 15/2, (v.draw_y * cell_size) + cell_size/2 - 15/2, 15, 15, GREEN);
+            DrawRectangle((v.draw_x * cell_size) + cell_size/2 - v.draw_size/2, (v.draw_y * cell_size) + cell_size/2 - v.draw_size/2, v.draw_size, v.draw_size, GREEN);
         }
         else
         {
-            DrawRectangle((v.draw_x * cell_size) + cell_size/2 - 15/2, (v.draw_y * cell_size) + cell_size/2 - 15/2, 15, 15, DARKGREEN);
+            DrawRectangle((v.draw_x * cell_size) + cell_size/2 - v.draw_size/2, (v.draw_y * cell_size) + cell_size/2 - v.draw_size/2, v.draw_size, v.draw_size, DARKGREEN);
         }
     }
     for (int i = 0; i < APPLES_length; i++)
