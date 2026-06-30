@@ -1,11 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "raylib.h"
 
 static const int win_width = 400;    //Window width
 static const int win_height = 400;  //Window height
 static float dt = 0;    //Delta time
+static float FPS = 0;
+static char FS[20];
 static float timer = 0;
 
 typedef struct {
@@ -110,11 +113,12 @@ int main(void)
 {
 
     InitWindow(win_width, win_height, "nipple");
-    SetTargetFPS(60);
+    SetTargetFPS(1000);
     InitGame(); 
 
     while(!WindowShouldClose())
     {
+        FPS = roundf(1/dt);
         dt = GetFrameTime();
 
         timer = timer + dt;
@@ -275,6 +279,12 @@ void DrawGame(void)
     BeginDrawing();
 
     ClearBackground(BLACK);
+
+    // DrawFPS(0, 0);
+    // printf("\n%f", FPS);
+    sprintf(FS, "%.0f", FPS);
+    // printf("\n%s", FS);
+    DrawText(FS, 0, 0, 18, WHITE);
 
     for (int i = 0; i < snake.length; i++)
     {
