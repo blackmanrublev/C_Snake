@@ -10,7 +10,6 @@ static float dt = 0;    //Delta time
 static float FPS = 0;
 static char FS[20];
 static float timer = 0;
-
 typedef struct {
     float initial_value;
     float final_value;
@@ -289,7 +288,11 @@ void DrawGame(void)
     for (int i = 0; i < snake.length; i++)
     {
         Segment v = snake.data[i];
-        if (i % 2 == 0)
+        if (i == 0)
+        {
+            DrawCircle((v.draw_x * cell_size) + cell_size/2, (v.draw_y * cell_size) + cell_size/2, v.draw_size/2, GREEN);
+        }
+        else if (i % 2 == 0)
         {
             DrawRectangle((v.draw_x * cell_size) + cell_size/2 - v.draw_size/2, (v.draw_y * cell_size) + cell_size/2 - v.draw_size/2, v.draw_size, v.draw_size, GREEN);
         }
